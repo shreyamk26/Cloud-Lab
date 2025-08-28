@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/keycloak-js@latest/dist/keycloak.min.js"></script>
+</head>
+<body>
+<h1>Keycloak Protected App</h1>
+<button onclick="keycloak.login()">Login</button>
+<button onclick="keycloak.logout()">Logout</button>
+<button onclick="showToken()">showToken</button>
+<button onclick="validateToken()">validate Token</button>
+
+<div id="output"></div>
+
+<script>
+
+const keycloak=new Keycloak({
+url : "http://localhost:8080/auth",
+realm : "secured-apps",
+client : "html-clientss"
+});
+
+keycloak.init({onLoad : "login-required",
+checkLoginlframe : true})
+.then(authenticated =>{
+document.getElementById('output').innerHTML=authenticated ? "Authenticated <br>" : "Not Authenticated <br>";
+
+setInterval()=>{
+keycloak.updateToken(30).catch(() =>{
+alert("Token expire on Invalid Logging out...");
+keycloak.logout();
+});
+},1000);
+});
+
+function showToken(){
+document.getElementById('output').innerHTML+=
+"<p> <b>Access token : </b> <br>" +keycloak.token + "</p>";
+}
+
+async function validateToken(){
+try{
+const response = await fetch("http://loaclhost:8080/auth/realms/secure-app/protocol/openid-connect/userinfo" ,{
+headers : {"Authorization " : "Bearer" + keycloak.token}
+});
+
+if(!response.ok) throw new Error("Invalid Token or permission error");
+
+const data= await response.json();
+document.getElementById('output').innerHTML+= "<p>Token valid User : "+ data.prefered_username+ "</p>",
+
+}catch(err){
+document.getElementById('output').innerHTML+="<p style='color:red;'>" +err.message+"</p>";
+}
+}
+</script>
+
+</body>
+</html>
